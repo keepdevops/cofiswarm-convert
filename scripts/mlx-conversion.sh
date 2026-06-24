@@ -1,4 +1,9 @@
-cat > ~/cofiswarmdev/scripts/convert-to-mlx.sh << 'EOF'
+#!/bin/bash
+# Generator: emits convert-to-mlx.sh into this repo's own scripts/ dir.
+# (Standalone — no longer writes into the legacy ~/cofiswarmdev monorepo.)
+set -e
+OUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cat > "${OUT_DIR}/convert-to-mlx.sh" << 'EOF'
 #!/bin/bash
 # ================================================
 # Cofiswarm - Convert GGUF to MLX Script
