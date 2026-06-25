@@ -13,6 +13,7 @@ import (
 	"github.com/keepdevops/cofiswarm-convert/internal/bus"
 	"github.com/keepdevops/cofiswarm-convert/internal/httpapi"
 	"github.com/keepdevops/cofiswarm-convert/internal/jobs"
+	"github.com/keepdevops/cofiswarm-observer-sdk/pkg/buspresence"
 	"github.com/keepdevops/cofiswarm-observer-sdk/pkg/servicecomponent"
 )
 
@@ -40,6 +41,11 @@ func main() {
 		}
 	}
 
+	// Carrier presence (broker-free, default-off via COFISWARM_BRIDGE_URL): appear in the
+	// observer live roster over the zmq-bridge without needing a NATS broker. HTTP /healthz
+	// + /v1/info remain the request/reply surface.
+	stopPresence := buspresence.StartPresence(os.Getenv("COFISWARM_BRIDGE_URL"), "convert", map[string]any{"name": "convert"})
+
 	httpSrv := &http.Server{Addr: *addr, Handler: httpapi.New(q).Handler()}
 	go func() {
 		log.Printf("convert listening on %s", *addr)
@@ -54,8 +60,9 @@ func main() {
 	<-ctx.Done()
 	log.Printf("convert: shutting down")
 	if comp != nil {
-		comp.Shutdown() // goodbye -> offline
+		comp.Shutdown() // NATS goodbye -> offline
 	}
+	stopPresence() // carrier goodbye -> offline
 	shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := httpSrv.Shutdown(shutCtx); err != nil {
